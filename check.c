@@ -27,7 +27,7 @@ unsigned int check_dir(char **argv, struct stat filestat)
 	return dirCount;
 }
 
-char check_flags(char **argv, int argc)
+char check_flags(char **argv)
 {
 	char			flags = 0;
 	unsigned short	j = 1;
@@ -60,7 +60,7 @@ char check_flags(char **argv, int argc)
 							flags += tFlag;
 						break;
 					case 'r':
-						if (!(flags & lFlag))
+						if (!(flags & rFlag))
  							flags += rFlag;
 						break;
 					default:

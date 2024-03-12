@@ -53,7 +53,7 @@ typedef struct sFiles
 
 //check
 void			ft_error(char *str);
-char			check_flags(char **argv, int argc);
+char			check_flags(char **argv);
 unsigned int	check_dir(char **argv, struct stat filestat);
 //print
 void			print_permissions(struct stat filestat);

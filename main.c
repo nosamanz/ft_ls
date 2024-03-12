@@ -102,13 +102,6 @@ tFiles* sortByMtime(tFiles* head) {
 			temp->next = current;
 		}
 	}
-
-	tFiles* temp = sortedList;
-	while (temp->next != NULL) {
-		ft_printf("-->%s\n", temp->name);
-		temp = temp->next;
-	}
-
 	return sortedList;
 }
 
@@ -157,7 +150,6 @@ int open_read_dir(char *dirname, char flags)
 
 	struct dirent	*entry;
 	struct stat		filestat;
-	struct dirName	*dirs;
 
 	unsigned long total = 0;
 
@@ -177,6 +169,8 @@ int open_read_dir(char *dirname, char flags)
 		path = ft_strjoin(ft_strjoin(dirname, "/"), entry->d_name);
 		if (lstat(path, &filestat) == -1)
 			perror("lstat");
+		if (!(flags & aFlag) && ft_strncmp(entry->d_name, ".", ft_strlen(".")) == 0)
+			continue;
 		pushFile(&files, ft_strdup(entry->d_name), filestat.st_mtime);
 		if (flags & lFlag)
 			total += filestat.st_blocks;
@@ -185,7 +179,6 @@ int open_read_dir(char *dirname, char flags)
 
 	if (flags & tFlag)
 		files = sortByMtime(files);
-
 	if (flags & lFlag)
 		ft_printf("total: %d\n", (long)(total / 2));
 	if (flags & rFlag)
@@ -219,7 +212,7 @@ int open_read_dir(char *dirname, char flags)
 		}
 		ft_printf("%s%s\n", BBLU, files->name);
 		files = files->next;
-		free(path);
+		// free(path);
 	}
 	if (flags & rFlag || flags & RFlag)
 	{
@@ -234,31 +227,15 @@ int open_read_dir(char *dirname, char flags)
 	return 1;
 }
 
-int main(int argc, char **argv)
+void dir_args(size_t i, char **argv, t_list **dirNames)
 {
-	ft_printf("%sFT_LS is runing!\n", BYEL);
-
-	DIR *dir;
-	struct dirent	*entry;
 	struct stat		filestat;
-	char			flags = 0;
-
-	char **dirs = NULL;
-
-	struct passwd	*passwd;
-
-	t_list *dirNames = NULL;
-
-
-	flags = check_flags(argv,argc);
-
-	size_t i = argc - 1;
 	while (i > 0)
 	{
 		if (argv[i][0] != '-' && lstat(argv[i], &filestat) != -1)
 		{
 			if (filestat.st_mode & S_IFDIR)
-				push(&dirNames, ft_strdup(argv[i]));
+				push(dirNames, ft_strdup(argv[i]));
 		}
 		else if (argv[i][0] != '-'){
 			ft_printf("%s", BRED);
@@ -266,16 +243,28 @@ int main(int argc, char **argv)
 		}
 		i--;
 	}
+}
+
+int main(int argc, char **argv)
+{
+	ft_printf("%sFT_LS is runing!\n", BYEL);
+
+	char	flags;
+	t_list	*dirNames;
+
+	dirNames = NULL;
+
+	flags = 0;
+	flags = check_flags(argv);
+
+	if (argc > 1)
+		dir_args((size_t)argc - 1, argv, &dirNames);
 
 	if (argc == 1 || dirNames == NULL)
-	{
 		push(&dirNames, ".");
-	}
 
 	while (dirNames != NULL)
 	{
-		if (argc > 2)
-			ft_printf("%s%s:\n", BWHT,(char *)dirNames->data);
 		open_read_dir(dirNames->data, flags);
 		dirNames = dirNames->next;
 	}

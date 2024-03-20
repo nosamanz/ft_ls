@@ -58,5 +58,9 @@ unsigned int	check_dir(char **argv, struct stat filestat);
 //print
 void			print_permissions(struct stat filestat);
 void			print_time(time_t time);
+//utils
+tFiles			*sortByMtime(tFiles *head);
+void			pushFile(tFiles **head, void *data, time_t mtime);
+void			reverse(tFiles **head_ref);
 
 #endif

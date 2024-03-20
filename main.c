@@ -1,15 +1,14 @@
-	// -R flag : show subdirectories
+// -R flag : show subdirectories
 
-	// -l flag : show long format
+// -l flag : show long format
 
-	// -a flag : show hidden files
+// -a flag : show hidden files
 
-	// -r flag : reverse sort
+// -r flag : reverse sort
 
-	// -t flag : sort by time modified
+// -t flag : sort by time modified
 
-
- // ********************************************************************************** //
+// ********************************************************************************** //
 
 // struct dirent {
 //     ino_t          d_ino;       /* inode number */
@@ -40,7 +39,7 @@
 
 //-----------------------
 
-//getgrgid()
+// getgrgid()
 
 // The getgrgid() function returns a pointer to a structure containing the broken-out fields of the record in the group database that matches the group ID gid.
 // The group structure is defined in <grp.h> as follows:
@@ -51,7 +50,6 @@
 //     gid_t   gr_gid;        /* group ID */
 //     char  **gr_mem;        /* group members */
 // };
-
 
 // ********************************************************************************** //
 
@@ -79,178 +77,150 @@
 
 #include "ft_ls.h"
 
-tFiles* sortByMtime(tFiles* head) {
-	if (head == NULL || head->next == NULL) {
-		return head;
-	}
-
-	tFiles* sortedList = NULL;
-
-	while (head != NULL) {
-		tFiles* current = head;
-		head = head->next;
-
-		if (sortedList == NULL || current->mtime > sortedList->mtime) {
-			current->next = sortedList;
-			sortedList = current;
-		} else {
-			tFiles* temp = sortedList;
-			while (temp->next != NULL && current->mtime < temp->next->mtime) {
-				temp = temp->next;
-			}
-			current->next = temp->next;
-			temp->next = current;
-		}
-	}
-	return sortedList;
-}
-
-
-void pushFile(tFiles** head, void* data, time_t mtime) {
-	tFiles* newNode = (tFiles*)malloc(sizeof(tFiles));
-	if (newNode == NULL) {
-		ft_printf("malloc error\n");
-		exit(EXIT_FAILURE);
-	}
-	newNode->name = data;
-	if (mtime)
-		newNode->mtime = mtime;
-	newNode->next = NULL;
-
-	if (*head == NULL) {
-		*head = newNode;
-	} else {
-		tFiles* current = *head;
-		while (current->next != NULL) {
-			current = current->next;
-		}
-		current->next = newNode;
-	}
-}
-
-tFiles* reverse(tFiles* head) {
-	tFiles* prev = NULL;
-	tFiles* current = head;
-	tFiles* nextNode;
-
-	while (current != NULL) {
-		nextNode = current->next;
-		current->next = prev;
-		prev = current;
-		current = nextNode;
-	}
-
-	return prev;
-}
-
-int open_read_dir(char *dirname, char flags)
+tFiles *take_files(char *dirname, unsigned long *total, struct stat filestat, char flags)
 {
-	if (flags & RFlag)
-		ft_printf("%s%s:\n", BWHT, dirname);
-
-	struct dirent	*entry;
-	struct stat		filestat;
-
-	unsigned long total = 0;
-
-	tFiles *files = NULL;
-	tFiles *directories = NULL;
-
 	char *path;
+	char *temp;
+	struct dirent *entry;
+	tFiles *files;
+	files = NULL;
+	DIR *dir;
+	dir = opendir(dirname);
 
-	DIR *dir = opendir(dirname);
 	if (dir == NULL)
 	{
 		ft_printf("%sError : Directory could not be opened\n", BRED);
-		return -1;
+		return NULL;
 	}
-
-	while ((entry = readdir(dir)) != NULL) {
-		path = ft_strjoin(ft_strjoin(dirname, "/"), entry->d_name);
+	while ((entry = readdir(dir)) != NULL)
+	{
+		temp = ft_strjoin(dirname, "/");
+		path = ft_strjoin(temp, entry->d_name);
 		if (lstat(path, &filestat) == -1)
+		{
 			perror("lstat");
+		}
+		free(temp);
+		free(path);
 		if (!(flags & aFlag) && ft_strncmp(entry->d_name, ".", ft_strlen(".")) == 0)
 			continue;
 		pushFile(&files, ft_strdup(entry->d_name), filestat.st_mtime);
 		if (flags & lFlag)
-			total += filestat.st_blocks;
-		free(path);
+			*total += filestat.st_blocks;
 	}
+	closedir(dir);
+	return files;
+}
 
-	if (flags & tFlag)
-		files = sortByMtime(files);
-	if (flags & lFlag)
-		ft_printf("total: %d\n", (long)(total / 2));
-	if (flags & rFlag)
-		files = reverse(files);
+tFiles *take_directories(tFiles *files, tFiles *directories, char *dirname, char flags)
+{
+	char *path;
+	char *temp;
+	struct stat filestat;
 
 	while (files != NULL)
 	{
-		path = ft_strjoin(ft_strjoin(dirname, "/"), files->name);
+		temp = ft_strjoin(dirname, "/");
+		path = ft_strjoin(temp, files->name);
+		free(temp);
 		short int a = lstat(path, &filestat);
-		if (flags & RFlag
-			&& (ft_strncmp(files->name, ".", ft_strlen(files->name)) != 0
-			&& ft_strncmp(files->name, "..", ft_strlen(files->name)) != 0))
+		if (flags & RFlag && (ft_strncmp(files->name, ".", ft_strlen(files->name)) != 0 && ft_strncmp(files->name, "..", ft_strlen(files->name)) != 0))
 		{
-			if ((filestat.st_mode & S_IFDIR ) && a != -1)
-			{
-				pushFile(&directories, path, 0);
-			}
+			if ((filestat.st_mode & S_IFDIR) && a != -1)
+				pushFile(&directories, ft_strdup(path), 0);
 		}
+		free(path);
 		if (!(flags & aFlag) && ft_strncmp(files->name, ".", ft_strlen(".")) == 0)
 		{
+			free(files->name);
 			files = files->next;
 			continue;
 		}
 		if (flags & lFlag)
 		{
+			ft_printf("%s", BBLU);
 			print_permissions(filestat);
 			ft_printf("%d %s %s\t%d ", filestat.st_nlink, (getpwuid(filestat.st_uid)->pw_name), (getgrgid(filestat.st_gid)->gr_name), filestat.st_size);
-			if (ft_strlen(ft_itoa(filestat.st_size)) < 5)
+			char *st_str = ft_itoa(filestat.st_size);
+			if (ft_strlen(st_str) < 6)
 				ft_printf("\t");
+			free(st_str);
 			print_time(filestat.st_mtime);
 		}
-		ft_printf("%s%s\n", BBLU, files->name);
-		files = files->next;
-		// free(path);
+		ft_printf("%s%s\n", BGRN, files->name);
+		void *next = files->next;
+		free(files->name);
+		free(files);
+		files = next;
 	}
-	if (flags & rFlag || flags & RFlag)
-	{
-		directories = reverse(directories);
-	}
-	while (directories != NULL)
-	{
-		open_read_dir(directories->name, flags);
-		directories = directories->next;
-	}
-	closedir(dir);
-	return 1;
+	return directories;
 }
 
-void dir_args(size_t i, char **argv, t_list **dirNames)
+void open_read_dir(char *dirname, char flags, unsigned int dir_count)
 {
-	struct stat		filestat;
+	if (flags & RFlag)
+		ft_printf("%s%s:\n", BWHT, dirname);
+	struct stat filestat;
+	unsigned long total = 0;
+	tFiles *files = NULL;
+	tFiles *directories = NULL;
+
+	files = take_files(dirname, &total, filestat, flags);
+
+	if (flags & tFlag)
+		files = sortByMtime(files);
+	// if given multiple directories, print the directory name
+	if (dir_count > 1)
+		ft_printf("%s:\n", dirname);
+	if (flags & lFlag)
+		ft_printf("total: %d\n", (long)(total / 2));
+	if (flags & rFlag)
+		reverse(&files);
+	directories = take_directories(files, directories, dirname, flags);
+	if (flags & rFlag || flags & RFlag)
+		reverse(&directories);
+	while (directories != NULL)
+	{
+		open_read_dir(directories->name, flags, dir_count);
+		void *next = directories->next;
+		free(directories->name);
+		free(directories);
+		directories = next;
+	}
+}
+
+unsigned int dir_args(size_t i, char **argv, t_list **dirNames)
+{
+	struct stat filestat;
+	unsigned int counter = 0;
 	while (i > 0)
 	{
 		if (argv[i][0] != '-' && lstat(argv[i], &filestat) != -1)
 		{
 			if (filestat.st_mode & S_IFDIR)
-				push(dirNames, ft_strdup(argv[i]));
+			{
+				push(dirNames, argv[i]);
+				counter++;
+			}
 		}
-		else if (argv[i][0] != '-'){
+		else if (argv[i][0] != '-')
+		{
 			ft_printf("%s", BRED);
 			perror("ls");
+			counter++;
 		}
 		i--;
 	}
+	return counter;
 }
 
 int main(int argc, char **argv)
 {
 	ft_printf("%sFT_LS is runing!\n", BYEL);
 
-	char	flags;
-	t_list	*dirNames;
+	char flags;
+	t_list *dirNames;
+	unsigned int dir_count = 0;
 
 	dirNames = NULL;
 
@@ -258,15 +228,17 @@ int main(int argc, char **argv)
 	flags = check_flags(argv);
 
 	if (argc > 1)
-		dir_args((size_t)argc - 1, argv, &dirNames);
+		dir_count = dir_args((size_t)argc - 1, argv, &dirNames);
 
 	if (argc == 1 || dirNames == NULL)
 		push(&dirNames, ".");
 
 	while (dirNames != NULL)
 	{
-		open_read_dir(dirNames->data, flags);
-		dirNames = dirNames->next;
+		open_read_dir(dirNames->data, flags, dir_count);
+		void *next = dirNames->next;
+		free(dirNames);
+		dirNames = next;
 	}
 
 	return 1;

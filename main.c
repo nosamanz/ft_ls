@@ -89,7 +89,7 @@ tFiles *take_files(char *dirname, unsigned long *total, struct stat filestat, ch
 
 	if (dir == NULL)
 	{
-		ft_printf("%sError : Directory could not be opened\n", BRED);
+		ft_printf("%sls: cannot access '%s': %s\n", BRED, dirname, strerror(errno));
 		return NULL;
 	}
 	while ((entry = readdir(dir)) != NULL)
@@ -97,9 +97,7 @@ tFiles *take_files(char *dirname, unsigned long *total, struct stat filestat, ch
 		temp = ft_strjoin(dirname, "/");
 		path = ft_strjoin(temp, entry->d_name);
 		if (lstat(path, &filestat) == -1)
-		{
 			perror("lstat");
-		}
 		free(temp);
 		free(path);
 		if (!(flags & aFlag) && ft_strncmp(entry->d_name, ".", ft_strlen(".")) == 0)
@@ -114,9 +112,10 @@ tFiles *take_files(char *dirname, unsigned long *total, struct stat filestat, ch
 
 tFiles *take_directories(tFiles *files, tFiles *directories, char *dirname, char flags)
 {
-	char *path;
-	char *temp;
-	struct stat filestat;
+	char		*path;
+	char		*temp;
+	struct stat	filestat;
+	void		*next;
 
 	while (files != NULL)
 	{
@@ -124,7 +123,8 @@ tFiles *take_directories(tFiles *files, tFiles *directories, char *dirname, char
 		path = ft_strjoin(temp, files->name);
 		free(temp);
 		short int a = lstat(path, &filestat);
-		if (flags & RFlag && (ft_strncmp(files->name, ".", ft_strlen(files->name)) != 0 && ft_strncmp(files->name, "..", ft_strlen(files->name)) != 0))
+		if (flags & RFlag && (ft_strncmp(files->name, ".", ft_strlen(files->name)) != 0 &&
+								ft_strncmp(files->name, "..", ft_strlen(files->name)) != 0))
 		{
 			if ((filestat.st_mode & S_IFDIR) && a != -1)
 				pushFile(&directories, ft_strdup(path), 0);
@@ -136,19 +136,11 @@ tFiles *take_directories(tFiles *files, tFiles *directories, char *dirname, char
 			files = files->next;
 			continue;
 		}
+		// l flag output
 		if (flags & lFlag)
-		{
-			ft_printf("%s", BBLU);
-			print_permissions(filestat);
-			ft_printf("%d %s %s\t%d ", filestat.st_nlink, (getpwuid(filestat.st_uid)->pw_name), (getgrgid(filestat.st_gid)->gr_name), filestat.st_size);
-			char *st_str = ft_itoa(filestat.st_size);
-			if (ft_strlen(st_str) < 6)
-				ft_printf("\t");
-			free(st_str);
-			print_time(filestat.st_mtime);
-		}
-		ft_printf("%s%s\n", BGRN, files->name);
-		void *next = files->next;
+			l_flag(filestat);
+		ft_printf("%s%s%s\n", BGRN, files->name, RESET);
+		next = files->next;
 		free(files->name);
 		free(files);
 		files = next;
@@ -158,31 +150,26 @@ tFiles *take_directories(tFiles *files, tFiles *directories, char *dirname, char
 
 void open_read_dir(char *dirname, char flags, unsigned int dir_count)
 {
-	if (flags & RFlag)
-		ft_printf("%s%s:\n", BWHT, dirname);
-	struct stat filestat;
-	unsigned long total = 0;
-	tFiles *files = NULL;
-	tFiles *directories = NULL;
+	struct stat		filestat;
+	unsigned long	total;
+	tFiles			*files;
+	tFiles			*directories;
+	void			*next;
+
+	files = NULL;
+	directories = NULL;
+	total = 0;
 
 	files = take_files(dirname, &total, filestat, flags);
-
-	if (flags & tFlag)
-		files = sortByMtime(files);
-	// if given multiple directories, print the directory name
-	if (dir_count > 1)
-		ft_printf("%s:\n", dirname);
-	if (flags & lFlag)
-		ft_printf("total: %d\n", (long)(total / 2));
-	if (flags & rFlag)
-		reverse(&files);
+	files = flag_edit(flags, files, dirname, total, dir_count);
 	directories = take_directories(files, directories, dirname, flags);
+
 	if (flags & rFlag || flags & RFlag)
 		reverse(&directories);
 	while (directories != NULL)
 	{
 		open_read_dir(directories->name, flags, dir_count);
-		void *next = directories->next;
+		next = directories->next;
 		free(directories->name);
 		free(directories);
 		directories = next;
@@ -192,6 +179,7 @@ void open_read_dir(char *dirname, char flags, unsigned int dir_count)
 unsigned int dir_args(size_t i, char **argv, t_list **dirNames)
 {
 	struct stat filestat;
+	// ft_memset(&filestat, 0, sizeof(struct stat));
 	unsigned int counter = 0;
 	while (i > 0)
 	{
@@ -204,11 +192,7 @@ unsigned int dir_args(size_t i, char **argv, t_list **dirNames)
 			}
 		}
 		else if (argv[i][0] != '-')
-		{
-			ft_printf("%s", BRED);
-			perror("ls");
-			counter++;
-		}
+			ft_printf("%sls: cannot access '%s': %s\n", BRED, argv[i], strerror(errno));
 		i--;
 	}
 	return counter;
@@ -220,18 +204,24 @@ int main(int argc, char **argv)
 
 	char flags;
 	t_list *dirNames;
-	unsigned int dir_count = 0;
+	unsigned int dir_count;
 
 	dirNames = NULL;
-
+	dir_count = 0;
 	flags = 0;
 	flags = check_flags(argv);
 
 	if (argc > 1)
 		dir_count = dir_args((size_t)argc - 1, argv, &dirNames);
 
-	if (argc == 1 || dirNames == NULL)
+	// if we have flag and no directories (No such file or directory)
+	if ((flags > 0 ) && (dir_count == 0) && (argc > 2))
+		exit(EXIT_FAILURE);
+	else if (argc == 1 || (flags > 0 && dir_count == 0))
 		push(&dirNames, ".");
+
+	if (dirNames == NULL)
+		exit(EXIT_FAILURE);
 
 	while (dirNames != NULL)
 	{
@@ -241,5 +231,5 @@ int main(int argc, char **argv)
 		dirNames = next;
 	}
 
-	return 1;
+	return 0;
 }

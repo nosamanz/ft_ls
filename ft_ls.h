@@ -44,6 +44,10 @@
 #include <time.h>
 #include <stdio.h>
 
+//strerror
+#include <errno.h>
+#include <string.h>
+
 typedef struct sFiles
 {
 	char	*name;
@@ -62,5 +66,7 @@ void			print_time(time_t time);
 tFiles			*sortByMtime(tFiles *head);
 void			pushFile(tFiles **head, void *data, time_t mtime);
 void			reverse(tFiles **head_ref);
-
+//flags
+tFiles			*flag_edit(char flags, tFiles *files, char *dirname, unsigned long total, unsigned int dir_count);
+void			l_flag(struct stat filestat);
 #endif

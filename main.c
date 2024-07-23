@@ -117,6 +117,7 @@ tFiles *take_directories(tFiles *files, tFiles *directories, char *dirname, char
 	struct stat	filestat;
 	void		*next;
 
+	ft_memset(&filestat, 0, sizeof(struct stat));
 	while (files != NULL)
 	{
 		temp = ft_strjoin(dirname, "/");
@@ -160,6 +161,7 @@ void open_read_dir(char *dirname, char flags, unsigned int dir_count)
 	directories = NULL;
 	total = 0;
 
+	ft_memset(&filestat, 0, sizeof(struct stat));
 	files = take_files(dirname, &total, filestat, flags);
 	files = flag_edit(flags, files, dirname, total, dir_count);
 	directories = take_directories(files, directories, dirname, flags);
@@ -179,7 +181,8 @@ void open_read_dir(char *dirname, char flags, unsigned int dir_count)
 unsigned int dir_args(size_t i, char **argv, t_list **dirNames)
 {
 	struct stat filestat;
-	// ft_memset(&filestat, 0, sizeof(struct stat));
+
+	ft_memset(&filestat, 0, sizeof(struct stat));
 	unsigned int counter = 0;
 	while (i > 0)
 	{

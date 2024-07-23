@@ -26,6 +26,7 @@
 #define BMAG "\e[1;35m"
 #define BCYN "\e[1;36m"
 #define BWHT "\e[1;37m"
+#define RESET "\033[0m"
 
 int		ft_isalpha(int c);
 int		ft_isdigit(int c);

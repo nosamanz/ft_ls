@@ -137,10 +137,7 @@ tFiles *take_directories(tFiles *files, tFiles *directories, char *dirname, char
 			files = files->next;
 			continue;
 		}
-		// l flag output
-		if (flags & lFlag)
-			l_flag(filestat);
-		ft_printf("%s%s%s\n", BGRN, files->name, RESET);
+		print_file(files->name, flags, filestat);
 		next = files->next;
 		free(files->name);
 		free(files);
@@ -166,10 +163,18 @@ void open_read_dir(char *dirname, char flags, unsigned int dir_count)
 	files = flag_edit(flags, files, dirname, total, dir_count);
 	directories = take_directories(files, directories, dirname, flags);
 
-	if (flags & rFlag || flags & RFlag)
-		reverse(&directories);
+	// if we have directories to print, print a new line
+	if (!(flags & lFlag))
+		ft_printf("\n");
+
+	if ((flags & RFlag) && !(flags & lFlag) && dir_count > 1)
+		ft_printf("%d\n", dir_count);
+
 	while (directories != NULL)
 	{
+		if (flags & rFlag)
+			reverse(&directories);
+		ft_printf("\n");
 		open_read_dir(directories->name, flags, dir_count);
 		next = directories->next;
 		free(directories->name);
@@ -190,6 +195,7 @@ unsigned int dir_args(size_t i, char **argv, t_list **dirNames)
 		{
 			if (filestat.st_mode & S_IFDIR)
 			{
+				remove_last_slashes(argv[i]);
 				push(dirNames, argv[i]);
 				counter++;
 			}

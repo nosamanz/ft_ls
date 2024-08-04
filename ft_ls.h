@@ -62,10 +62,12 @@ unsigned int	check_dir(char **argv, struct stat filestat);
 //print
 void			print_permissions(struct stat filestat);
 void			print_time(time_t time);
+void			print_file(char *filename, char flags, struct stat filestat);
 //utils
 tFiles			*sortByMtime(tFiles *head);
 void			pushFile(tFiles **head, void *data, time_t mtime);
 void			reverse(tFiles **head_ref);
+void			remove_last_slashes(char *str);
 //flags
 tFiles			*flag_edit(char flags, tFiles *files, char *dirname, unsigned long total, unsigned int dir_count);
 void			l_flag(struct stat filestat);

@@ -27,3 +27,16 @@ void print_time(time_t time)
 	}
 	write(1, " ", 1);
 }
+
+void print_file(char *filename, char flags, struct stat filestat)
+{
+	if (flags & lFlag)
+	{
+		l_flag(filestat);
+		ft_printf("%s%s%s\n", BGRN, filename, RESET);
+	}
+	else
+	{
+		ft_printf("%s%s%s  ", BGRN, filename, RESET);
+	}
+}

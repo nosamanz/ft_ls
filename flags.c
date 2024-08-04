@@ -2,13 +2,11 @@
 
 tFiles	*flag_edit(char flags, tFiles *files, char *dirname, unsigned long total, unsigned int dir_count)
 {
-	if (flags & RFlag)
-		ft_printf("%s%s:\n", BWHT, dirname);
+	// if given multiple directories, print the directory name
+	if (dir_count > 1 || (flags & RFlag))
+		ft_printf("%s%s%s:\n", BWHT, dirname, RESET);
 	if (flags & tFlag)
 		files = sortByMtime(files);
-	// if given multiple directories, print the directory name
-	if (dir_count > 1)
-		ft_printf("%s%s:\n", BWHT, dirname);
 	if (flags & lFlag)
 		ft_printf("total: %d\n", (long)(total / 2));
 	if (flags & rFlag)

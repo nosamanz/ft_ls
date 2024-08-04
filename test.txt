@@ -1,3 +1,0 @@
-gcc main.c -o a.out -Ilibft libft/libft.a
-
-DEFTER

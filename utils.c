@@ -42,19 +42,24 @@ void pushFile(tFiles **head, void *data, time_t mtime)
 		newNode->mtime = mtime;
 	newNode->next = NULL;
 
-	if (*head == NULL)
+	// If the list is empty or the new node is alphabetically first
+	if (*head == NULL || ft_strncmp((char *)data, (char *)((*head)->name), ft_strlen((char *)data)) < 0)
 	{
+		newNode->next = *head;
 		*head = newNode;
+		return;
 	}
-	else
+
+	// Find the correct position in alphabetical order
+	tFiles *current = *head;
+	while (current->next != NULL &&
+			ft_strncmp((char *)data, (char *)(current->next->name), ft_strlen((char *)data)) > 0)
 	{
-		tFiles *current = *head;
-		while (current->next != NULL)
-		{
-			current = current->next;
-		}
-		current->next = newNode;
+		current = current->next;
 	}
+
+	newNode->next = current->next;
+	current->next = newNode;
 }
 
 void reverse(tFiles **head_ref)
@@ -71,4 +76,14 @@ void reverse(tFiles **head_ref)
 	}
 
 	*head_ref = prev;
+}
+
+void remove_last_slashes(char *str)
+{
+	size_t len = ft_strlen(str);
+	while (str[len - 1] == '/')
+	{
+		str[len - 1] = '\0';
+		len--;
+	}
 }
